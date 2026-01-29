@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: oriental-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - db-data:/app/data
+      - ../backend:/app
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - DATABASE_PATH=/app/data/oriental_miniapp.db
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: oriental-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  bot:
+    build:
+      context: ../bot
+      dockerfile: ../docker/Dockerfile.bot
+    container_name: oriental-bot
+    volumes:
+      - ../bot:/app
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - MINI_APP_URL=${MINI_APP_URL}
+      - CHANNEL_USERNAME=${CHANNEL_USERNAME}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db-data:
+    driver: local
